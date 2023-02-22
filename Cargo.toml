@@ -1,0 +1,9 @@
+[package]
+name = "lnwasi"
+version = "0.0.1"
+edition = "2021"
+authors = ["Wongyu Lee <wq.lee@samsung.com>"]
+description = "Netlink Library for Web Assembly"
+license = "Apache-2.0"
+
+[dependencies]
