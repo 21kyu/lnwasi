@@ -198,17 +198,8 @@ mod tests {
         addr,
         link::{self, Kind, LinkAttrs},
         route::{Route, RtCmd},
+        test_setup,
     };
-
-    macro_rules! test_setup {
-        () => {
-            if !nix::unistd::geteuid().is_root() {
-                eprintln!("Test skipped, must be run as root");
-                return;
-            }
-            nix::sched::unshare(nix::sched::CloneFlags::CLONE_NEWNET).unwrap();
-        };
-    }
 
     #[test]
     fn test_link_add_modify_del() {

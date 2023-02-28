@@ -1,13 +1,12 @@
 [package]
 name = "lnwasi"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 authors = ["Wongyu Lee <wq.lee@samsung.com>"]
 description = "Netlink Library for Web Assembly"
 license = "Apache-2.0"
 repository = "https://github.com/21kyu/lnwasi"
 documentation = "https://docs.rs/lnwasi"
-categories = ["wasm", "networking"]
 
 [[bench]]
 name = "netlink-bench"

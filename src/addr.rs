@@ -101,10 +101,10 @@ pub fn addr_handle(cmd: AddrCmd, index: i32, addr: &Address) -> Result<NetlinkRe
         Some(IpNet::V4(ip)) if family == libc::AF_INET6 => {
             ip.addr().to_ipv6_mapped().octets().to_vec()
         }
-        Some(IpNet::V6(ip)) if family == libc::AF_INET => {
-            // TODO: avoid to use unwrap
-            ip.addr().to_ipv4().unwrap().octets().to_vec()
-        }
+        Some(IpNet::V6(ip)) if family == libc::AF_INET => match ip.addr().to_ipv4() {
+            Some(ipv4) => ipv4.octets().to_vec(),
+            None => vec![],
+        },
         Some(IpNet::V4(ip)) => ip.addr().octets().to_vec(),
         Some(IpNet::V6(ip)) => ip.addr().octets().to_vec(),
         None => local_addr_data.clone(),

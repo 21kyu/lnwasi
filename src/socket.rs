@@ -189,7 +189,6 @@ mod tests {
                         return;
                     }
                     consts::NLMSG_DONE => {
-                        println!("end of dump");
                         break 'done;
                     }
                     _ => {
