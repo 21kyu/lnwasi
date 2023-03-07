@@ -27,22 +27,25 @@ impl SocketHandle {
     pub fn link_new(&mut self, link: &(impl Link + ?Sized), flags: i32) -> Result<()> {
         let mut req = link::link_new(link, flags)?;
         let _ = self.execute(&mut req, 0)?;
+
+        if link.attrs().master_index != 0 {
+            let index = self.ensure_index(link.attrs())?;
+            let mut req = link::link_set_master(index, link.attrs().master_index)?;
+            let _ = self.execute(&mut req, 0)?;
+        }
+
         Ok(())
     }
 
-    pub fn link_del(&mut self, attr: &LinkAttrs) -> Result<()> {
-        let index = match attr.index {
-            0 => self.link_get(attr)?.attrs().index,
-            _ => attr.index,
-        };
-
+    pub fn link_del(&mut self, attrs: &LinkAttrs) -> Result<()> {
+        let index = self.ensure_index(attrs)?;
         let mut req = link::link_del(index)?;
         let _ = self.execute(&mut req, 0)?;
         Ok(())
     }
 
-    pub fn link_get(&mut self, attr: &LinkAttrs) -> Result<Box<dyn Link>> {
-        let mut req = link::link_get(attr)?;
+    pub fn link_get(&mut self, attrs: &LinkAttrs) -> Result<Box<dyn Link>> {
+        let mut req = link::link_get(attrs)?;
         let msgs = self.execute(&mut req, 0)?;
 
         match msgs.len() {
@@ -52,23 +55,15 @@ impl SocketHandle {
         }
     }
 
-    pub fn link_setup(&mut self, attr: &LinkAttrs) -> Result<()> {
-        let index = match attr.index {
-            0 => self.link_get(attr)?.attrs().index,
-            _ => attr.index,
-        };
-
+    pub fn link_setup(&mut self, attrs: &LinkAttrs) -> Result<()> {
+        let index = self.ensure_index(attrs)?;
         let mut req = link::link_setup(index)?;
         let _ = self.execute(&mut req, 0)?;
         Ok(())
     }
 
-    pub fn addr_handle(&mut self, cmd: AddrCmd, attr: &LinkAttrs, addr: &Address) -> Result<()> {
-        let index = match attr.index {
-            0 => self.link_get(attr)?.attrs().index,
-            _ => attr.index,
-        };
-
+    pub fn addr_handle(&mut self, cmd: AddrCmd, attrs: &LinkAttrs, addr: &Address) -> Result<()> {
+        let index = self.ensure_index(attrs)?;
         let mut req = addr::addr_handle(cmd, index, addr)?;
         let _ = self.execute(&mut req, 0)?;
         Ok(())
@@ -128,6 +123,13 @@ impl SocketHandle {
                 RtFilter::None => true,
             })
             .collect())
+    }
+
+    fn ensure_index(&mut self, attrs: &LinkAttrs) -> Result<i32> {
+        Ok(match attrs.index {
+            0 => self.link_get(attrs)?.attrs().index,
+            _ => attrs.index,
+        })
     }
 
     fn execute(&mut self, req: &mut NetlinkRequest, res_type: u16) -> Result<Vec<Vec<u8>>> {
@@ -286,11 +288,35 @@ mod tests {
     fn test_link_veth() {
         test_setup!();
         let mut handle = super::SocketHandle::new(libc::NETLINK_ROUTE).unwrap();
+
+        let attr = LinkAttrs::new("br");
+        let link = Kind::Bridge {
+            attrs: attr.clone(),
+            hello_time: None,
+            ageing_time: Some(30102),
+            multicast_snooping: None,
+            vlan_filtering: Some(true),
+        };
+
+        handle
+            .link_new(
+                &link,
+                libc::NLM_F_CREATE | libc::NLM_F_EXCL | libc::NLM_F_ACK,
+            )
+            .unwrap();
+
+        let link = handle.link_get(&attr).unwrap();
+        let master_index = link.attrs().index;
+
         let mut attr = LinkAttrs::new("foo");
         attr.mtu = 1400;
         attr.tx_queue_len = 100;
         attr.num_tx_queues = 4;
         attr.num_rx_queues = 8;
+        attr.master_index = master_index;
+
+        // [40 0 0 0 19 0 5 0 8 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 0 0 0 0 0 0 0 0 8 0 10 0 2 0 0 0]
+        // [40 0 0 0 19 0 5 0 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8 0 10 0 2 0 0 0]
 
         // TODO: need to set peer hw addr and peer ns
         let link = Kind::Veth {
