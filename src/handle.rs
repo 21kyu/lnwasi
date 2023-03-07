@@ -315,9 +315,6 @@ mod tests {
         attr.num_rx_queues = 8;
         attr.master_index = master_index;
 
-        // [40 0 0 0 19 0 5 0 8 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 0 0 0 0 0 0 0 0 8 0 10 0 2 0 0 0]
-        // [40 0 0 0 19 0 5 0 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8 0 10 0 2 0 0 0]
-
         // TODO: need to set peer hw addr and peer ns
         let link = Kind::Veth {
             attrs: attr.clone(),
