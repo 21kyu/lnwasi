@@ -568,10 +568,26 @@ pub fn link_setup(index: i32) -> Result<NetlinkRequest> {
     let mut req = NetlinkRequest::new(libc::RTM_NEWLINK, libc::NLM_F_ACK);
     let mut msg = Box::new(InfoMessage::new(libc::AF_UNSPEC));
     msg.index = index;
-    msg.flags = 1;
-    msg.change = 1;
+    msg.flags = libc::IFF_UP as u32;
+    msg.change = libc::IFF_UP as u32;
 
     req.add_data(msg);
+
+    Ok(req)
+}
+
+pub fn link_set_master(index: i32, master: i32) -> Result<NetlinkRequest> {
+    let mut req = NetlinkRequest::new(libc::RTM_SETLINK, libc::NLM_F_ACK);
+    let mut msg = Box::new(InfoMessage::new(libc::AF_UNSPEC));
+    msg.index = index;
+
+    let mut b = [0; 4];
+    b.copy_from_slice(&master.to_ne_bytes());
+
+    let data = Box::new(NetlinkRouteAttr::new(libc::IFLA_MASTER, b.to_vec()));
+
+    req.add_data(msg);
+    req.add_data(data);
 
     Ok(req)
 }

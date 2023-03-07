@@ -5,6 +5,38 @@ and exposes a high level API for interacting with the kernel's netlink interface
 similarly to the `iproute2` command line tool.
 Ultimately, the goal is to make the library available in a **web assembly** environment as well.
 
+## Examples
+
+Add a new dummy link and modify its name:
+
+```rust
+use anyhow::Result;
+use lnwasi::{
+    link::{Kind, Link, LinkAttrs},
+    netlink::Netlink,
+};
+
+fn main() {
+    let mut netlink = Netlink::new().unwrap();
+
+    let dummy = Kind::Dummy(LinkAttrs {
+        name: "foo".to_string(),
+        ..Default::default()
+    });
+
+    netlink.link_add(&dummy).unwrap();
+
+    let mut link = netlink.link_get(dummy.attrs()).unwrap();
+
+    link.attrs_mut().name = "bar".to_string();
+    netlink.link_modify(&link).unwrap();
+
+    let link = netlink.link_get(link.attrs()).unwrap();
+
+    netlink.link_del(&link).unwrap();
+}
+```
+
 ## Supported commands
 
 ### Link
